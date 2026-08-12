@@ -95,9 +95,6 @@ python main.py
 </p>
 </div>
 
-## O que eu aprendi fazendo isso
-
-Ainda vou escrever essa parte com calma — foi bastante coisa: a decisão de trocar PUT por PATCH depois de ler a documentação da própria API e perceber que ia sobrescrever dado que não deveria tocar; o processo de migrar de Railway pra Render no meio do projeto; e principalmente entender, na prática, que "não fingir que uma limitação de dado não existe" (o caso da falta de data nas news) é uma decisão de engenharia tão válida quanto qualquer outra — só que mais honesta.
 
 ## Autor
 
