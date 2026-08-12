@@ -1,0 +1,87 @@
+name: ETL Campanha Segmentada
+
+# Três formas de disparo, cada uma com um propósito diferente:
+# - push: valida a suíte de testes a cada mudança no main (CI de verdade)
+# - schedule: roda o pipeline completo semanalmente
+# - workflow_dispatch: permite rodar manualmente pelo GitHub, sem esperar o cron
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Toda segunda-feira às 9h UTC (cron é sempre em UTC, ajuste conforme seu fuso).
+    # Frequência semanal de propósito: depois da primeira rodada, a maior parte
+    # da base já tem news e é excluída — rodar diário desperdiçaria minutos do
+    # Actions processando gente que já foi contatada.
+    - cron: "0 9 * * 1"
+  workflow_dispatch: {}
+
+jobs:
+  testes:
+    name: Rodar suíte de testes
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Rodar pytest
+        run: pytest -v
+
+  executar-pipeline:
+    name: Executar o pipeline contra a API real
+    needs: testes
+    # Só roda em execução agendada ou disparo manual — nunca em push.
+    # Testes rodam sempre; o pipeline de verdade (que grava na API e gasta
+    # cota do Gemini) só roda quando é intencional.
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Configurar Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Acordar a API (Render free tier hiberna após inatividade)
+        run: |
+          echo "Aguardando a API responder (cold start pode levar até 60s)..."
+          curl --retry 5 --retry-delay 10 --retry-connrefused --max-time 90 \
+            --silent --output /dev/null --show-error \
+            "${{ secrets.API_URL }}/docs" || echo "Aviso: API não respondeu no aquecimento, seguindo mesmo assim."
+
+      - name: Rodar o pipeline
+        working-directory: src
+        env:
+          API_URL: ${{ secrets.API_URL }}
+          API_USERNAME: ${{ secrets.API_USERNAME }}
+          API_PASSWORD: ${{ secrets.API_PASSWORD }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SALDO_LIMITE_BAIXO: ${{ vars.SALDO_LIMITE_BAIXO }}
+          SALDO_LIMITE_ALTO: ${{ vars.SALDO_LIMITE_ALTO }}
+          OPT_OUT_PATH: ../data/opt_out.csv
+          AUDIT_LOG_PATH: ../logs/audit_log.jsonl
+          REPORT_PATH: ../report_etl.csv
+        run: python main.py
+
+      - name: Publicar relatório e log de auditoria como artefatos
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: resultado-execucao-${{ github.run_number }}
+          path: |
+            report_etl.csv
+            logs/audit_log.jsonl
+          if-no-files-found: warn
+          retention-days: 30
