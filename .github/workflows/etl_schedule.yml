@@ -32,7 +32,9 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Rodar pytest
-        run: pytest -v
+        env:
+          PYTHONPATH: src
+        run: python -m pytest src/tests/ -v
 
   executar-pipeline:
     name: Executar o pipeline contra a API real
