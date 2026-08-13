@@ -107,6 +107,7 @@ Excluídos (faixa neutra): 17 | Excluídos (já receberam news): 69 | Excluídos
 18 mensagens geradas via Gemini
 Gravados: 18/18 | Falhas: 0
 ```
+Os 18 processados na primeira rodada entraram direto em "já receberam news" na segunda — zero duplicidade, e o pipeline nem chamou o Gemini à toa. Conferi manualmente via `GET /usuario/16` que a news gerada ("Mathias da Luz, organizar o orçamento hoje constrói sua segurança financeira amanhã.") estava lá, persistida de verdade no Postgres.
 
 ## Autor
 
