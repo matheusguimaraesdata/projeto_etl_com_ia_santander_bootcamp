@@ -6,7 +6,7 @@ Reescrevi do zero pensando em como isso funcionaria de verdade num banco: em vez
 
 ## O que ele faz
 
-A regra que implementei: clientes com saldo baixo (inclusive negativo) entram numa campanha de educação financeira; clientes com saldo alto entram numa campanha de investimentos avançados; quem está no meio dos dois limites não é público de nenhuma das duas. Quem já recebeu qualquer comunicação da campanha, ou está numa lista de supressão (opt-out), é excluído independente do saldo.
+**A regra que implementei**: clientes com saldo baixo (inclusive negativo) entram numa campanha de educação financeira; clientes com saldo alto entram numa campanha de investimentos avançados; quem está no meio dos dois limites não é público de nenhuma das duas. Quem já recebeu qualquer comunicação da campanha, ou está numa lista de supressão (opt-out), é excluído independente do saldo.
 
 Cada elegível recebe uma mensagem gerada pelo Gemini, com um prompt diferente dependendo do segmento — e se o Gemini falhar por qualquer motivo (rate limit, timeout, erro de rede), cai num fallback também específico do segmento, não um texto genérico. A ideia é que uma falha pontual na IA não bagunce a mensagem que o cliente recebe.
 
@@ -43,13 +43,13 @@ Separei assim porque quero conseguir testar a regra de segmentação sem precisa
 
 ## Projeto relacionado
 
-A fonte e o destino dos dados é a **users-api-python** — API que também construí, com FastAPI, SQLModel e Postgres (Neon). Os dois projetos formam um ecossistema: a API expõe os dados, o ETL decide o que fazer com eles.
+A fonte e o destino dos dados é a **users-api-python** — API que também construí, com **FastAPI**, **SQLModel** e **Postgres (Neon)**. Os dois projetos formam um ecossistema: a API expõe os dados, o ETL decide o que fazer com eles.
 
-Um detalhe de infraestrutura que vale registrar: originalmente hospedava a API no Railway, mas o plano gratuito deles mudou de modelo em 2026 (virou trial + US$1/mês) e o deploy parou. Migrei para a Render, que tem um free tier real sem cartão de crédito — a troca é que o serviço "dorme" depois de 15 minutos sem uso, e a primeira requisição depois disso demora uns 30-60 segundos pra acordar. Pra portfólio isso é aceitável; pra produção de verdade, não seria — e essa é exatamente a diferença que eu explicaria numa entrevista se perguntassem.
+Detalhes de como os dois se encaixam, incluindo a migração de Railway pra Render, estão em [ECOSISTEMA.md](ECOSSISTEMA.md).
 
 🔗 [users-api-python](https://github.com/matheusguimaraesdata/users-api-python)
 
-## Rodando localmente
+## Rodando o projeto
 
 ```bash
 git clone https://github.com/matheusguimaraesdata/projeto_etl_com_ia_santander_bootcamp.git
@@ -95,6 +95,18 @@ python main.py
 </p>
 </div>
 
+### Último teste realizado
+
+Teste realizado *12/08/2026* com (Render + Neon), com base de 104 usuários sintéticos.
+
+**Resultados do primeiro teste:**
+```
+104 usuários extraídos da API
+Avaliados: 104 | Educação financeira: 18 | Investimentos avançados: 0 |
+Excluídos (faixa neutra): 17 | Excluídos (já receberam news): 69 | Excluídos (supressão): 0
+18 mensagens geradas via Gemini
+Gravados: 18/18 | Falhas: 0
+```
 
 ## Autor
 
